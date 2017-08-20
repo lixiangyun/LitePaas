@@ -42,7 +42,6 @@ func readFully(conn io.ReadCloser) ([]byte, error) {
 
 	for {
 		n, err := conn.Read(buf[0:])
-
 		result.Write(buf[0:n])
 
 		if err != nil {
