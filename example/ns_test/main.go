@@ -31,6 +31,7 @@ func main() {
 	err := nss.RegisterService(hw)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	service.Address = "192.168.0.99"
@@ -44,14 +45,45 @@ func main() {
 	err = nss.RegisterService(hw)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	data, err := nss.GetService("helloworld")
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	fmt.Println("Items:", len(data))
 	fmt.Println("server: ", data)
 
+	dc, err := nss.GetDataCenters()
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	fmt.Println("Items:", len(dc))
+	fmt.Println("dc: ", dc)
+
+	var servername ns.DeNsItem
+
+	servername.Datacenter = "dc1"
+	servername.Node = data[0].Node
+	servername.ServiceID = data[0].ServiceID
+
+	err = nss.DeRegisterService(servername)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	data, err = nss.GetService("helloworld")
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	fmt.Println("Items:", len(data))
+	fmt.Println("server: ", data)
 }

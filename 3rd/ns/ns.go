@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -18,11 +17,6 @@ type Consul struct {
 
 type NsClient struct {
 	cosl []Consul
-}
-
-type NsCheck struct {
-	Http     string `json:"http"`
-	Interval string `json:"interval"`
 }
 
 type NsService struct {
@@ -144,8 +138,6 @@ func (c *NsClient) RegisterService(ns NsItem) error {
 		return err
 	}
 
-	log.Println(request)
-
 	rsp, err := ConsulRequest("PUT", consul.home+"/catalog/register", request)
 	if err != nil {
 		return err
@@ -182,4 +174,62 @@ func (c *NsClient) GetService(servername string) ([]NsData, error) {
 	}
 
 	return data, nil
+}
+
+type DeNsItem struct {
+	Datacenter string `json:"Datacenter"`
+	Node       string `json:"Node"`
+	ServiceID  string `json:"ServiceID"`
+}
+
+func (c *NsClient) DeRegisterService(ns DeNsItem) error {
+	consul := getConsul(c)
+	if consul == nil {
+		return errors.New("No alive consul service")
+	}
+
+	request, err := json.Marshal(ns)
+	if err != nil {
+		return err
+	}
+
+	rsp, err := ConsulRequest("PUT", consul.home+"/catalog/deregister", request)
+	if err != nil {
+		return err
+	}
+
+	if -1 == strings.Index(string(rsp), "true") {
+		return errors.New("register failed ! " + string(rsp))
+	}
+
+	return nil
+}
+
+func (c *NsClient) GetDataCenters() ([]string, error) {
+	consul := getConsul(c)
+	if consul == nil {
+		return nil, errors.New("No alive consul service")
+	}
+
+	rsp, err := ConsulRequest("PUT", consul.home+"/catalog/datacenters", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rsp) == 0 {
+		return nil, errors.New("Not found datacenters")
+	}
+
+	dc := make([]string, 0)
+
+	err = json.Unmarshal(rsp, &dc)
+	if err != nil {
+		return nil, err
+	}
+
+	if 0 == len(dc) {
+		return nil, errors.New("Not found datacenters")
+	}
+
+	return dc, nil
 }
