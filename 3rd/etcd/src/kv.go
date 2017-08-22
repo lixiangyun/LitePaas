@@ -5,10 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
+	//	"fmt"
 	"io"
 	"net/http"
-	"strings"
 )
 
 type Etcd struct {
@@ -27,10 +26,10 @@ type KvInfo struct {
 }
 
 type GetKv struct {
-	Key   string `json:"key"`
+	Key string `json:"key"`
 }
 
-type Header struct {
+type header struct {
 	ClusterId string `json:"cluster_id"`
 	MemberId  string `json:"member_id"`
 	Revision  string `json:"revision"`
@@ -38,16 +37,21 @@ type Header struct {
 }
 
 type KvPutRsp struct {
-	H Header `json:"header"`
+	H header `json:"header"`
 }
 
-type KvData struct {
-	LockInfex   int    `json:"LockIndex"`
-	Key         string `json:"Key"`
-	Flags       int    `json:"Flags"`
-	Value       string `json:"Value"`
-	CreateIndex int    `json:"CreateIndex"`
-	ModifyIndex int    `json:"ModifyIndex"`
+type KVS struct {
+	Key     string `json:"key"`
+	Create  string `json:"create_revision"`
+	Modify  string `json:"mod_revision"`
+	Version string `json:"version"`
+	Value   string `json:"value"`
+}
+
+type KvGetRsp struct {
+	Header header `json:"header"`
+	Kvs    []KVS  `json:"kvs"`
+	Count  string `json:"count"`
 }
 
 func readFully(conn io.ReadCloser) ([]byte, error) {
@@ -160,7 +164,7 @@ func (c *EtcdClient) NewKv(key, value string) error {
 		return err
 	}
 
-	fmt.Println(result)
+	//fmt.Println(result)
 
 	return nil
 }
@@ -173,11 +177,11 @@ func (c *EtcdClient) GetKv(key string) ([]KvInfo, error) {
 	}
 
 	var kv GetKv
-	kv.Key = base64.StdEncoding.EncodeToString([]byte(key))\
+	kv.Key = base64.StdEncoding.EncodeToString([]byte(key))
 
 	buf, err := json.Marshal(kv)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	rsp, err := ConsulRequest("POST", consul.home+"/range", buf)
@@ -185,47 +189,44 @@ func (c *EtcdClient) GetKv(key string) ([]KvInfo, error) {
 		return nil, err
 	}
 
+	//fmt.Println(string(rsp))
+
 	if len(rsp) == 0 {
 		return nil, errors.New("Not found key:" + key)
 	}
 
-	data := make([]KvData, 0)
+	var data KvGetRsp
+	data.Kvs = make([]KVS, 1)
 
 	err = json.Unmarshal(rsp, &data)
 	if err != nil {
 		return nil, err
 	}
 
-	kv := make([]KvInfo, len(data))
+	//fmt.Println(data)
 
-	for i, v := range data {
-		buf, err := base64.StdEncoding.DecodeString(v.Value)
+	result := make([]KvInfo, 0)
+
+	for _, v := range data.Kvs {
+
+		var kv KvInfo
+
+		buf, err := base64.StdEncoding.DecodeString(v.Key)
 		if err != nil {
 			return nil, err
 		}
 
-		kv[i].Key = v.Key
-		kv[i].Value = string(buf)
+		kv.Key = string(buf)
+
+		buf, err = base64.StdEncoding.DecodeString(v.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		kv.Value = string(buf)
+
+		result = append(result, kv)
 	}
 
-	return kv, nil
-}
-
-func (c *EtcdClient) DelKv(key string) error {
-
-	consul := getClient(c)
-	if consul == nil {
-		return errors.New("No alive consul service")
-	}
-
-	rsp, err := ConsulRequest("DELETE", consul.home+key, nil)
-	if err != nil {
-		return err
-	}
-
-	if -1 == strings.Index(string(rsp), "true") {
-		return errors.New("Delete Key Fail: " + string(rsp))
-	}
-
-	return nil
+	return result, nil
 }

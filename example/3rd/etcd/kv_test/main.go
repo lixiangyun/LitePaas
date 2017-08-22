@@ -26,9 +26,4 @@ func main() {
 	fmt.Println("Items:", len(data))
 	fmt.Println("KV: ", data)
 
-	err = kvs.DelKv("web")
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
 }
