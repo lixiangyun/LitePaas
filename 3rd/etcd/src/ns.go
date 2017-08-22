@@ -1,10 +1,9 @@
-package ns
+package etcd
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"strings"
 )
@@ -48,27 +47,6 @@ type NsData struct {
 	ServiceTags     []string          `json:"ServiceTags"`
 	ServiceAddress  string            `json:"ServiceAddress"`
 	Port            int               `json:"ServicePort"`
-}
-
-func readFully(conn io.ReadCloser) ([]byte, error) {
-	result := bytes.NewBuffer(nil)
-
-	var buf [512]byte
-
-	for {
-		n, err := conn.Read(buf[0:])
-		result.Write(buf[0:n])
-
-		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				return nil, err
-			}
-		}
-	}
-
-	return result.Bytes(), nil
 }
 
 func ConsulRequest(method string, url string, req []byte) (rsp []byte, err error) {

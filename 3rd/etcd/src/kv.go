@@ -1,29 +1,44 @@
-package kv
+package etcd
 
 import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	//	"fmt"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 )
 
-type Consul struct {
+type Etcd struct {
 	home   string
 	status bool
 	index  int
 }
 
-type KvClient struct {
-	cosl []Consul
+type EtcdClient struct {
+	client []Etcd
 }
 
 type KvInfo struct {
-	Key   string
-	Value string
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type GetKv struct {
+	Key   string `json:"key"`
+}
+
+type Header struct {
+	ClusterId string `json:"cluster_id"`
+	MemberId  string `json:"member_id"`
+	Revision  string `json:"revision"`
+	RaftTerm  string `json:"raft_term"`
+}
+
+type KvPutRsp struct {
+	H Header `json:"header"`
 }
 
 type KvData struct {
@@ -56,7 +71,7 @@ func readFully(conn io.ReadCloser) ([]byte, error) {
 	return result.Bytes(), nil
 }
 
-func ConsulRequest(method string, url string, req []byte) (rsp []byte, err error) {
+func HttpRequest(method string, url string, req []byte) (rsp []byte, err error) {
 	body := bytes.NewBuffer(req)
 
 	request, err := http.NewRequest(method, url, body)
@@ -79,25 +94,25 @@ func ConsulRequest(method string, url string, req []byte) (rsp []byte, err error
 	return rsp, nil
 }
 
-func NewKvClient(addr []string) (c *KvClient) {
+func NewClient(addr []string) (c *EtcdClient) {
 
 	if len(addr) == 0 {
-		addr = []string{"localhost:8500"}
+		addr = []string{"localhost:2379"}
 	}
 
-	consul := make([]Consul, len(addr))
+	node := make([]Etcd, len(addr))
 
 	for i, v := range addr {
-		consul[i].home = "http://" + v + "/v1/kv/"
-		consul[i].status = true
-		consul[i].index = i
+		node[i].home = "http://" + v + "/v3alpha/kv"
+		node[i].status = true
+		node[i].index = i
 	}
 
-	return &KvClient{cosl: consul}
+	return &EtcdClient{client: node}
 }
 
-func getConsul(c *KvClient) *Consul {
-	for _, v := range c.cosl {
+func getClient(c *EtcdClient) *Etcd {
+	for _, v := range c.client {
 		if v.status == true {
 			return &v
 		}
@@ -106,39 +121,66 @@ func getConsul(c *KvClient) *Consul {
 	return nil
 }
 
-func setConsulStatus(index int, status bool, c *KvClient) {
-	if index < len(c.cosl) {
-		c.cosl[index].status = status
+func setEtcdStatus(index int, status bool, c *EtcdClient) {
+	if index < len(c.client) {
+		c.client[index].status = status
 	}
 }
 
-func (c *KvClient) NewKv(key, value string) error {
+func (c *EtcdClient) NewKv(key, value string) error {
 
-	consul := getConsul(c)
+	consul := getClient(c)
 	if consul == nil {
 		return errors.New("No alive consul service")
 	}
 
-	rsp, err := ConsulRequest("PUT", consul.home+key, []byte(value))
+	var kv KvInfo
+	kv.Key = base64.StdEncoding.EncodeToString([]byte(key))
+	kv.Value = base64.StdEncoding.EncodeToString([]byte(value))
+
+	buf, err := json.Marshal(kv)
 	if err != nil {
 		return err
 	}
 
-	if -1 == strings.Index(string(rsp), "true") {
-		return errors.New("New Key Fail: " + string(rsp))
+	//fmt.Println(consul)
+	//fmt.Println(string(buf))
+
+	rsp, err := ConsulRequest("POST", consul.home+"/put", buf)
+	if err != nil {
+		return err
 	}
+
+	//fmt.Println(string(rsp))
+
+	var result KvPutRsp
+
+	err = json.Unmarshal(rsp, &result)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(result)
 
 	return nil
 }
 
-func (c *KvClient) GetKv(key string) ([]KvInfo, error) {
+func (c *EtcdClient) GetKv(key string) ([]KvInfo, error) {
 
-	consul := getConsul(c)
+	consul := getClient(c)
 	if consul == nil {
 		return nil, errors.New("No alive consul service")
 	}
 
-	rsp, err := ConsulRequest("GET", consul.home+key, nil)
+	var kv GetKv
+	kv.Key = base64.StdEncoding.EncodeToString([]byte(key))\
+
+	buf, err := json.Marshal(kv)
+	if err != nil {
+		return err
+	}
+
+	rsp, err := ConsulRequest("POST", consul.home+"/range", buf)
 	if err != nil {
 		return nil, err
 	}
@@ -169,9 +211,9 @@ func (c *KvClient) GetKv(key string) ([]KvInfo, error) {
 	return kv, nil
 }
 
-func (c *KvClient) DelKv(key string) error {
+func (c *EtcdClient) DelKv(key string) error {
 
-	consul := getConsul(c)
+	consul := getClient(c)
 	if consul == nil {
 		return errors.New("No alive consul service")
 	}

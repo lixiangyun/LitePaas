@@ -1,1 +1,2 @@
+set ETCDCTL_API=3
 cmd
