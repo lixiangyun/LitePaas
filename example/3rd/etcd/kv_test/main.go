@@ -14,7 +14,7 @@ func banchmark(num int) {
 
 	for i := 0; i < num; i++ {
 		value := fmt.Sprint("helloworld_%d", i)
-		err := kvs.NewKv("web", value)
+		err := kvs.SetKeyValue("web", value)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -35,7 +35,7 @@ func banchmark2(num int) {
 
 	for i := 0; i < num; i++ {
 
-		_, err := kvs.GetKv("web")
+		_, err := kvs.GetKeyValue("web")
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -56,23 +56,20 @@ func main() {
 
 	kvs = etcd.NewClient(addr)
 
-	data := make([]etcd.KvInfo, 0)
-
-	err := kvs.NewKv("web", "helloworld")
+	err := kvs.SetKeyValue("message", "helloworld")
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	data, err = kvs.GetKv("web")
+	data, err := kvs.GetKeyValue("message")
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	fmt.Println("Items:", len(data))
 	fmt.Println("KV: ", data)
 
-	banchmark(3000)
-	banchmark2(3000)
+	//banchmark(3000)
+	//banchmark2(3000)
 }
