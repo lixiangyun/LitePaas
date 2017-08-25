@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -96,8 +97,8 @@ func setEtcdStatus(index int, status bool, c *EtcdClient) {
 }
 
 type VersionInfo struct {
-	server  string `json:"etcdserver"`
-	cluster string `json:"etcdcluster"`
+	Server  string `json:"etcdserver"`
+	Cluster string `json:"etcdcluster"`
 }
 
 func (c *EtcdClient) GetVersion() (ver VersionInfo, err error) {
@@ -108,12 +109,52 @@ func (c *EtcdClient) GetVersion() (ver VersionInfo, err error) {
 		return
 	}
 
-	rsp, err := HttpRequest("POST", client.home+"/version", nil)
+	rsp, err := HttpRequest("GET", client.home+"/version", nil)
 	if err != nil {
 		return
 	}
 
+	fmt.Print(string(rsp))
+
 	err = json.Unmarshal(rsp, &ver)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+type Stats struct {
+	CompareAndSwapFail    int `json:"compareAndSwapFail"`
+	CompareAndSwapSuccess int `json:"compareAndSwapSuccess"`
+	CreateFail            int `json:"createFail"`
+	CreateSuccess         int `json:"createSuccess"`
+	DeleteFail            int `json:"deleteFail"`
+	DeleteSuccess         int `json:"deleteSuccess"`
+	ExpireCount           int `json:"expireCount"`
+	GetsFail              int `json:"getsFail"`
+	GetsSuccess           int `json:"getsSuccess"`
+	SetsFail              int `json:"setsFail"`
+	SetsSuccess           int `json:"setsSuccess"`
+	UpdateFail            int `json:"updateFail"`
+	UpdateSuccess         int `json:"updateSuccess"`
+	Watchers              int `json:"watchers"`
+}
+
+func (c *EtcdClient) GetStats() (stats Stats, err error) {
+
+	client := getClient(c)
+	if client == nil {
+		err = errors.New("not alive consul service")
+		return
+	}
+
+	rsp, err := HttpRequest("GET", client.home+"/v2/stats/store", nil)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(rsp, &stats)
 	if err != nil {
 		return
 	}

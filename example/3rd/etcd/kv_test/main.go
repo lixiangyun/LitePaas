@@ -131,6 +131,10 @@ func main() {
 
 	fmt.Println("KV: ", data)
 
+	stat, err := kvs.GetStats()
+
+	fmt.Println("Stat: ", stat)
+
 	//banchmark(3000)
 	//banchmark2(3000)
 }
