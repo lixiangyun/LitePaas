@@ -65,8 +65,6 @@ func (c *EtcdClient) SetKeyValueByTTL(key, value string, ttl int) error {
 
 	value = fmt.Sprintf("value=%s&ttl=%d", value, ttl)
 
-	fmt.Println(value)
-
 	rsp, err := HttpRequest("PUT", client.home+"/v2/keys"+key+"?"+value, nil)
 	if err != nil {
 		return err
