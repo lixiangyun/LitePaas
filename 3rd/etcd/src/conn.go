@@ -124,7 +124,7 @@ func (c *EtcdClient) GetVersion() (ver VersionInfo, err error) {
 	return
 }
 
-type Stats struct {
+type EtcdStats struct {
 	CompareAndSwapFail    int `json:"compareAndSwapFail"`
 	CompareAndSwapSuccess int `json:"compareAndSwapSuccess"`
 	CreateFail            int `json:"createFail"`
@@ -141,7 +141,7 @@ type Stats struct {
 	Watchers              int `json:"watchers"`
 }
 
-func (c *EtcdClient) GetStats() (stats Stats, err error) {
+func (c *EtcdClient) GetStats() (stats EtcdStats, err error) {
 
 	client := getClient(c)
 	if client == nil {
