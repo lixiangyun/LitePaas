@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func TestSetKeyValue(t *testing.T) {
+func TestSetKeyValue01(t *testing.T) {
 
 	kvs := NewClient([]string{"localhost:2379"})
 
@@ -148,3 +148,76 @@ func TestWatchKeyValueByTimes01(t *testing.T) {
 		t.Error(data)
 	}
 }*/
+
+func TestCreateDir01(t *testing.T) {
+
+	kvs := NewClient([]string{"localhost:2379"})
+
+	kvs.DeleteDir("/test_dir", true)
+
+	err := kvs.CreateDir("/test_dir")
+	if err != nil {
+		t.Errorf("%s", err.Error())
+		return
+	}
+
+	err = kvs.DeleteDir("/test_dir", false)
+	if err != nil {
+		t.Errorf("%s", err.Error())
+		return
+	}
+}
+
+func TestListDir01(t *testing.T) {
+
+	kvs := NewClient([]string{"localhost:2379"})
+
+	err := kvs.CreateDir("/test_dir")
+	if err != nil {
+		t.Errorf("%s", err.Error())
+		return
+	}
+
+	for i := 0; i < 10; i++ {
+
+		key := fmt.Sprintf("/test_dir/test_key%d", i)
+		value := fmt.Sprintf("test_%d", i)
+
+		err := kvs.SetKeyValue(key, value)
+		if err != nil {
+			t.Errorf("%s", err.Error())
+			return
+		}
+	}
+
+	data, err := kvs.ListDir("/test_dir", false)
+	if err != nil {
+		t.Errorf("%s", err.Error())
+		return
+	}
+
+	if len(data) != 10 {
+		t.Errorf("get file list error (%d)", len(data))
+	}
+
+	for _, v := range data {
+
+		var i int
+
+		fmt.Sscanf(v.Key, "/test_dir/test_key%d", &i)
+
+		key := fmt.Sprintf("/test_dir/test_key%d", i)
+		value := fmt.Sprintf("test_%d", i)
+
+		if v.IsDir == true || v.Key != key || v.Value != value {
+			t.Errorf("get data failed! ", v.IsDir)
+			t.Error(v)
+		}
+	}
+
+	err = kvs.DeleteDir("/test_dir", true)
+	if err != nil {
+		t.Errorf("%s", err.Error())
+		return
+	}
+}

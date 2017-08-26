@@ -17,7 +17,6 @@ type Rsponse struct {
 	Action   string `json:"action"`
 	NowNode  Node   `json:"node"`
 	PrevNode Node   `json:"prevNode"`
-	Nodes    []Node `json:"nodes"`
 }
 
 func (c *EtcdClient) SetKeyValue(key, value string) error {
@@ -252,38 +251,42 @@ func (c *EtcdClient) CreateDir(dir string) error {
 	return nil
 }
 
-func (c *EtcdClient) ListDir(dir string, recursive bool) error {
+func (c *EtcdClient) ListDir(dir string, recursive bool) ([]Node, error) {
 
 	if dir[0] != '/' {
-		return errors.New("input invaild " + dir)
+		return nil, errors.New("input invaild " + dir)
 	}
 
 	client := getClient(c)
 	if client == nil {
-		return errors.New("not alive etcd service")
+		return nil, errors.New("not alive etcd service")
 	}
 
 	if recursive == true {
 		dir = fmt.Sprintf("%s?recursive=true", dir)
 	}
 
-	rsp, err := HttpRequest("DELETE", client.home+"/v2/keys"+dir, nil)
+	rsp, err := HttpRequest("GET", client.home+"/v2/keys"+dir, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	fmt.Print(string(rsp))
 
 	var result Rsponse
 
+	result.NowNode.Nodes = make([]Node, 0)
+
 	err = json.Unmarshal(rsp, &result)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if result.Action != "delete" {
-		return errors.New("rsponse error! " + string(rsp))
+	if result.Action != "get" {
+		return nil, errors.New("rsponse error! " + string(rsp))
 	}
 
-	return nil
+	return result.NowNode.Nodes, nil
 }
 
 func (c *EtcdClient) DeleteDir(dir string, recursive bool) error {
