@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -47,5 +48,13 @@ func main() {
 
 	fmt.Println(ShowCfg(cfg))
 	fmt.Println(ShowCfg(cfg2))
+
+	err = LogDirSet(cfg.LogDir)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	log.Println("helloworld!")
 
 }
