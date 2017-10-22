@@ -1,1 +1,1 @@
-{"mastername":"master01","address":"192.168.0.100","port":8900,"othermasteraddr":["192.168.0.101:8900","192.168.0.102:8900"],"logdir":"./"}
+{"mastername":"master01","address":"192.168.0.100","port":8900,"othermasteraddr":["192.168.0.101:8900","192.168.0.102:8900"],"logdir":"./","etcd":"localhost:3000"}
