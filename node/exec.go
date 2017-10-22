@@ -27,6 +27,15 @@ func (call *SysCall) Exec() error {
 	if err != nil {
 		return err
 	}
+
+	buf, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+
+	call.output <- string(buf)
+
+	return nil
 }
 
 func (call *SysCall) ExecTimeOut() error {
