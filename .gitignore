@@ -1,2 +1,3 @@
 *.exe
 3rd/etcd/default.etcd
+*.log
