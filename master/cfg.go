@@ -9,11 +9,12 @@ import (
 )
 
 type MasterConfig struct {
-	MasterName string   `json:"mastername"`
-	Address    string   `json:"address"`
-	Port       int      `json:"port"`
-	MasterAddr []string `json:"othermasteraddr"`
-	LogDir     string   `json:"logdir"`
+	MasterName  string   `json:"mastername"`
+	Address     string   `json:"address"`
+	Port        int      `json:"port"`
+	ClusterAddr []string `json:"othermasteraddr"`
+	LogDir      string   `json:"logdir"`
+	EtcdAddr    string   `json:"etcd"`
 }
 
 func LoadCfg(file string) (*MasterConfig, error) {
@@ -91,16 +92,18 @@ func SaveCfg(cfg *MasterConfig, file string) error {
 
 func ShowCfg(cfg *MasterConfig) string {
 
-	str := fmt.Sprintf("Master     : %s \r\n", cfg.MasterName)
-	str += fmt.Sprintf("Addr       : %s:%d \r\n", cfg.Address, cfg.Port)
+	str := fmt.Sprintf("Master      : %s \r\n", cfg.MasterName)
+	str += fmt.Sprintf("Addr        : %s:%d \r\n", cfg.Address, cfg.Port)
+	str += fmt.Sprintf("EtcdAddr    : %s \r\n", cfg.EtcdAddr)
 
-	for idx, v := range cfg.MasterAddr {
+	for idx, v := range cfg.ClusterAddr {
 		if idx == 0 {
-			str += fmt.Sprintf("MasterAddr : %s \r\n", v)
+			str += fmt.Sprintf("ClusterAddr : %s \r\n", v)
 		} else {
-			str += fmt.Sprintf("             %s \r\n", v)
+			str += fmt.Sprintf("              %s \r\n", v)
 		}
 	}
-	str += fmt.Sprintf("LogDir     : %s \r\n", cfg.LogDir)
+	str += fmt.Sprintf("LogDir      : %s \r\n", cfg.LogDir)
+
 	return str
 }
