@@ -1,9 +1,10 @@
 package main
 
 import (
-	"LitePaas/3rd/etcd/src"
 	"fmt"
 	"time"
+
+	"github.com/lixiangyun/LitePaas/3rd/etcd/src"
 )
 
 var kvs *etcd.EtcdClient
